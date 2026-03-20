@@ -1,5 +1,9 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
+/**
+ * Client components (e.g. landing auth) bundle `NEXT_PUBLIC_*` at **build** time.
+ * On Vercel: set those vars, then redeploy — editing env alone does not update old bundles.
+ */
 function resolveConfig() {
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
@@ -19,8 +23,12 @@ export function getSupabase(): SupabaseClient {
   if (client) return client
   const { url, key } = resolveConfig()
   if (!url || !key) {
+    const vercelHint =
+      process.env.VERCEL === '1'
+        ? ' Vercel: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (exact names) for Production *and* Preview if you use preview URLs. Then run Deployments → … → Redeploy — client-side code only picks up NEXT_PUBLIC_* when the project is rebuilt.'
+        : ''
     throw new Error(
-      'Missing Supabase env. In fitcoach/.env.local set NEXT_PUBLIC_SUPABASE_URL (https://YOUR_REF.supabase.co from Project Settings → API) and NEXT_PUBLIC_SUPABASE_ANON_KEY (publishable or anon key), then restart `next dev`.'
+      `Missing Supabase env.${vercelHint} Locally: set those two in .env.local next to package.json (Project URL + anon/publishable key from Supabase → Settings → API), then restart next dev.`
     )
   }
   if (url.startsWith('sb_publishable_') || url.startsWith('sb_secret_')) {
@@ -37,10 +45,7 @@ export function getSupabase(): SupabaseClient {
   return client
 }
 
-/**
- * Default import for client components: `import supabase from '@/lib/supabase'`
- * Forwards to the same singleton as getSupabase().
- */
+
 const supabase = new Proxy({} as SupabaseClient, {
   get(_target, prop: string | symbol) {
     const c = getSupabase()
