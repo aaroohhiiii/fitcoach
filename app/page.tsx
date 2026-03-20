@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { LucideIcon } from 'lucide-react'
 import {
@@ -38,7 +38,6 @@ const LIVE_STATS: { Icon: LucideIcon; text: string }[] = [
 
 export default function LandingPage() {
   const router = useRouter()
-  const bottomRef = useRef<HTMLDivElement>(null)
   const [showModal, setShowModal] = useState(false)
   const [isSignup, setIsSignup] = useState(false)
   const [email, setEmail] = useState('')
@@ -210,7 +209,7 @@ export default function LandingPage() {
               your actual data.
             </p>
 
-            <div className="mt-10 flex w-full max-w-xl flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-center">
+            <div className="mt-10 flex w-full max-w-xl justify-center">
               <button
                 type="button"
                 onClick={() => openModal(true)}
@@ -218,15 +217,6 @@ export default function LandingPage() {
               >
                 Get started
                 <ArrowRight className="h-4 w-4" strokeWidth={2.5} aria-hidden />
-              </button>
-              <button
-                type="button"
-                onClick={() =>
-                  bottomRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-                }
-                className="rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-medium text-white transition-colors hover:bg-white/10"
-              >
-                Learn more
               </button>
             </div>
 
@@ -261,10 +251,7 @@ export default function LandingPage() {
           </div>
         </main>
 
-        <div
-          ref={bottomRef}
-          className="h-px w-full bg-gradient-to-r from-transparent via-[#00ff87]/30 to-transparent"
-        />
+        <div className="h-px w-full bg-gradient-to-r from-transparent via-[#00ff87]/30 to-transparent" />
       </div>
 
       {showModal && (
