@@ -1,10 +1,27 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
-/**
- * Client components (e.g. landing auth) bundle `NEXT_PUBLIC_*` at **build** time.
- * On Vercel: set those vars, then redeploy — editing env alone does not update old bundles.
- */
+const CONFIG_SCRIPT_ID = 'fitcoach-supabase-config'
+
+function readInjectedPublicConfig(): { url: string; key: string } | null {
+  if (typeof window === 'undefined') return null
+  const el = document.getElementById(CONFIG_SCRIPT_ID)
+  const raw = el?.textContent?.trim()
+  if (!raw) return null
+  try {
+    const j = JSON.parse(raw) as { url?: unknown; key?: unknown }
+    const url = typeof j.url === 'string' ? j.url.trim() : ''
+    const key = typeof j.key === 'string' ? j.key.trim() : ''
+    if (url && key) return { url, key }
+  } catch {
+    /* ignore */
+  }
+  return null
+}
+
 function resolveConfig() {
+  const injected = readInjectedPublicConfig()
+  if (injected) return injected
+
   const url =
     process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() ||
     process.env.SUPABASE_URL?.trim()
@@ -16,19 +33,17 @@ function resolveConfig() {
 
 let client: SupabaseClient | null = null
 
-/**
- * Lazy client so env from .env.local is read when the handler runs, not only at cold import.
- */
+
 export function getSupabase(): SupabaseClient {
   if (client) return client
   const { url, key } = resolveConfig()
   if (!url || !key) {
     const vercelHint =
       process.env.VERCEL === '1'
-        ? ' Vercel: add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (exact names) for Production *and* Preview if you use preview URLs. Then run Deployments → … → Redeploy — client-side code only picks up NEXT_PUBLIC_* when the project is rebuilt.'
+        ? ' Vercel: Project Settings → Environment Variables — set NEXT_PUBLIC_SUPABASE_URL (project URL) and NEXT_PUBLIC_SUPABASE_ANON_KEY (anon/publishable), for Production and Preview.'
         : ''
     throw new Error(
-      `Missing Supabase env.${vercelHint} Locally: set those two in .env.local next to package.json (Project URL + anon/publishable key from Supabase → Settings → API), then restart next dev.`
+      `Missing Supabase env.${vercelHint} Locally: add them to .env.local next to package.json (Supabase → Settings → API), then restart next dev.`
     )
   }
   if (url.startsWith('sb_publishable_') || url.startsWith('sb_secret_')) {
