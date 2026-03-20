@@ -1,10 +1,40 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowRight, Check, X } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
+import {
+  Activity,
+  ArrowRight,
+  BarChart3,
+  Bike,
+  Check,
+  Dumbbell,
+  Flame,
+  Flower2,
+  Waves,
+  X,
+  Zap,
+} from 'lucide-react'
 import PrismBackground from '@/components/PrismBackground'
 import { getSupabase } from '@/lib/supabase'
+
+const LIVE_STATS: { Icon: LucideIcon; text: string }[] = [
+  { Icon: Activity, text: 'In the last 5 minutes, 47 people logged a running session' },
+  { Icon: Dumbbell, text: 'FitCoach users average a 12-day streak in their first month' },
+  {
+    Icon: BarChart3,
+    text: 'Did you know? Logging workouts makes you 3x more likely to stay consistent',
+  },
+  { Icon: Flame, text: '127 workouts have been logged in the last hour' },
+  { Icon: Flower2, text: 'Yoga is the fastest growing activity on FitCoach this week' },
+  { Icon: Zap, text: 'Users who check their streak daily work out 40% more often' },
+  { Icon: Bike, text: 'The longest active streak on FitCoach is 284 days' },
+  {
+    Icon: Waves,
+    text: 'Did you know? 30 mins of swimming burns as much as 60 mins of walking',
+  },
+]
 
 export default function LandingPage() {
   const router = useRouter()
@@ -16,6 +46,24 @@ export default function LandingPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState(false)
+  const [statIndex, setStatIndex] = useState(0)
+  const [fadeIn, setFadeIn] = useState(true)
+
+  useEffect(() => {
+    let fadeTimeout: ReturnType<typeof setTimeout> | undefined
+    const interval = setInterval(() => {
+      setFadeIn(false)
+      if (fadeTimeout) clearTimeout(fadeTimeout)
+      fadeTimeout = setTimeout(() => {
+        setStatIndex((prev) => (prev + 1) % LIVE_STATS.length)
+        setFadeIn(true)
+      }, 400)
+    }, 4000)
+    return () => {
+      clearInterval(interval)
+      if (fadeTimeout) clearTimeout(fadeTimeout)
+    }
+  }, [])
 
   const openModal = useCallback((signup: boolean) => {
     setShowModal(true)
@@ -84,6 +132,8 @@ export default function LandingPage() {
     'w-full rounded-lg border border-[#1c1c1c] bg-[#111] px-3 py-2.5 text-sm text-white placeholder:text-[#333] transition-colors focus:border-[#00ff87] focus:outline-none'
   const labelClass = 'text-xs font-bold uppercase tracking-widest text-[#333]'
 
+  const { Icon: StatIcon, text: statText } = LIVE_STATS[statIndex]
+
   return (
     <div className="relative min-h-screen bg-[#050508] text-white">
       <div className="absolute inset-0 h-full w-full">
@@ -106,7 +156,7 @@ export default function LandingPage() {
 
         <main className="flex flex-1 flex-col items-center px-6 pb-20 pt-8 md:px-10 md:pt-12">
           <div className="flex w-full max-w-2xl flex-col items-center text-center">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-1.5">
               <span className="relative flex h-2 w-2">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#00ff87] opacity-75" />
                 <span className="relative inline-flex h-2 w-2 rounded-full bg-[#00ff87]" />
@@ -114,6 +164,39 @@ export default function LandingPage() {
               <span className="text-xs font-medium text-[#00ff87]">
                 AI-powered fitness coaching
               </span>
+            </div>
+
+            <div className="mb-10 max-w-2xl w-full">
+              <div
+                className="bg-white/5 border border-white/10 rounded-2xl px-6 py-4 text-center transition-all duration-[400ms]"
+                style={{
+                  opacity: fadeIn ? 1 : 0,
+                  transform: fadeIn ? 'translateY(0)' : 'translateY(6px)',
+                }}
+              >
+                <div className="flex items-center justify-center gap-2.5">
+                  <StatIcon
+                    className="h-4 w-4 shrink-0 text-[#00ff87]"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  <p className="text-xs font-medium text-[#00ff87] text-center">{statText}</p>
+                </div>
+                <div className="flex items-center justify-center gap-1.5 mt-3">
+                  {LIVE_STATS.map((_, i) => (
+                    <div
+                      key={i}
+                      onClick={() => setStatIndex(i)}
+                      className="cursor-pointer rounded-full transition-all duration-300"
+                      style={{
+                        width: i === statIndex ? '20px' : '6px',
+                        height: '6px',
+                        background: i === statIndex ? '#00ff87' : '#333',
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
 
             <h1 className="text-5xl font-black leading-[1.05] tracking-tight md:text-7xl">
@@ -148,7 +231,7 @@ export default function LandingPage() {
             </div>
 
             <p className="mt-6 text-[10px] font-medium uppercase tracking-wider text-[#444]">
-              Free to start — no credit card required
+              Free to start .
             </p>
 
             <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:items-stretch">
@@ -157,7 +240,7 @@ export default function LandingPage() {
                   S
                 </div>
                 <div>
-                  <p className="text-sm font-medium leading-snug text-white">
+                  <p className="text-sm font-medium leading-snug text-black">
                     &ldquo;I haven&apos;t missed a workout in 47 days.&rdquo;
                   </p>
                   <p className="mt-0.5 text-xs text-[#555]">Sarah K. · Marathon runner</p>
@@ -168,7 +251,7 @@ export default function LandingPage() {
                   M
                 </div>
                 <div>
-                  <p className="text-sm font-medium leading-snug text-white">
+                  <p className="text-sm font-medium leading-snug text-black">
                     &ldquo;The AI coach actually calls me out. I love it.&rdquo;
                   </p>
                   <p className="mt-0.5 text-xs text-[#555]">Marcus T. · Gym enthusiast</p>
