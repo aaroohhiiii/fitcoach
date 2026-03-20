@@ -1,4 +1,4 @@
-import { choiceText, getGroqClient, GROQ_MODEL } from '@/lib/groq'
+import { groqChatCompletion, GROQ_MODEL } from '@/lib/groq'
 import { rowToChatMessage, type ChatMessage } from '@/lib/chat'
 import { getSupabase } from '@/lib/supabase'
 import { computeStats, type Workout } from '@/lib/stats'
@@ -94,14 +94,14 @@ export async function POST(req: Request) {
     const workouts = (workoutRows ?? []) as Workout[]
     const context = fitnessContextBlock(workouts)
 
-    const client = getGroqClient()
-    const completion = await client.chat.completions.create({
-      model: GROQ_MODEL,
-      max_tokens: 1024,
-      messages: [
-        {
-          role: 'system',
-          content: `You are FitCoach AI, a concise fitness coach inside a workout tracking web app. Users log activities like Running, Cycling, Gym, Yoga, etc.
+    const reply = (
+      await groqChatCompletion({
+        model: GROQ_MODEL,
+        max_tokens: 1024,
+        messages: [
+          {
+            role: 'system',
+            content: `You are FitCoach AI, a concise fitness coach inside a workout tracking web app. Users log activities like Running, Cycling, Gym, Yoga, etc.
 
 ${context}
 
@@ -109,15 +109,14 @@ Rules:
 - Give practical training, recovery, and habit advice. Keep replies focused; prefer short paragraphs over walls of text.
 - Do not diagnose medical conditions or replace a doctor; encourage professional help when appropriate.
 - If they ask something non-fitness, answer briefly then gently steer back to movement and health.`,
-        },
-        ...apiMessages.map((m) => ({
-          role: m.role,
-          content: m.content,
-        })),
-      ],
-    })
-
-    const reply = choiceText(completion).trim()
+          },
+          ...apiMessages.map((m) => ({
+            role: m.role,
+            content: m.content,
+          })),
+        ],
+      })
+    ).trim()
     if (!reply) {
       return NextResponse.json({ error: 'Empty response from AI' }, { status: 502 })
     }

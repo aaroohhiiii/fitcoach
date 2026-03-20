@@ -1,4 +1,4 @@
-import { choiceText, getGroqClient, GROQ_MODEL } from '@/lib/groq'
+import { groqChatCompletion, GROQ_MODEL } from '@/lib/groq'
 import { getSupabase } from '@/lib/supabase'
 import { computeStats, type Workout } from '@/lib/stats'
 import { NextResponse } from 'next/server'
@@ -67,34 +67,33 @@ export async function POST(req: Request) {
     const stats = computeStats(workouts)
     const statsBlock = buildUserStatsBlock(stats)
 
-    const client = getGroqClient()
-    const completion = await client.chat.completions.create({
-      model: GROQ_MODEL,
-      max_tokens: 512,
-      messages: [
-        {
-          role: 'system',
-          content: `${persona}
+    const text = (
+      await groqChatCompletion({
+        model: GROQ_MODEL,
+        max_tokens: 512,
+        messages: [
+          {
+            role: 'system',
+            content: `${persona}
 
 GLOBAL RULES (still obey the persona above—do not sound like a generic chatbot):
 - Output exactly one short message, 2–5 sentences, plain text.
 - Weave in several of the user's real numbers from the user message; never invent stats.
 - If they have logged zero workouts, tell them to log the first one while staying fully in persona.
 - No bullet lists, no markdown headings.`,
-        },
-        {
-          role: 'user',
-          content: `Selected tone id: "${tone}" (for your reference only—do not repeat this label).
+          },
+          {
+            role: 'user',
+            content: `Selected tone id: "${tone}" (for your reference only—do not repeat this label).
 
 Use ONLY these facts (verbatim values) when you cite numbers:
 ${statsBlock}
 
 Write the motivational message now.`,
-        },
-      ],
-    })
-
-    const text = choiceText(completion).trim()
+          },
+        ],
+      })
+    ).trim()
     if (!text) {
       return NextResponse.json({ error: 'Empty response from AI' }, { status: 502 })
     }
